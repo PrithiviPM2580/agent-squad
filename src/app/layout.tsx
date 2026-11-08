@@ -9,12 +9,12 @@ import {
   UserButton,
 } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
+import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
-import { Suspense } from "react";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 

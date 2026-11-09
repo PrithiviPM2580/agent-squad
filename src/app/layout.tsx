@@ -1,17 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "./globals.css";
-import {
-  ClerkProvider,
-  Show,
-  SignInButton,
-  SignUpButton,
-  UserButton,
-} from "@clerk/nextjs";
+import { ClerkProvider } from "@clerk/nextjs";
 import { shadcn } from "@clerk/ui/themes";
-import { Suspense } from "react";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Button } from "@/components/ui/button";
 import { Toaster } from "@/components/ui/toast";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -55,22 +47,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             enableSystem
             disableTransitionOnChange
           >
-            <TooltipProvider>
-              <header className="flex justify-end items-center p-4 gap-4 h-16">
-                <Suspense>
-                  <Show when="signed-out">
-                    <SignInButton />
-                    <SignUpButton>
-                      <Button>Sign Up</Button>
-                    </SignUpButton>
-                  </Show>
-                  <Show when="signed-in">
-                    <UserButton />
-                  </Show>
-                </Suspense>
-              </header>
-              {children}
-            </TooltipProvider>
+            <TooltipProvider>{children}</TooltipProvider>
             <Toaster />
           </ThemeProvider>
         </ClerkProvider>

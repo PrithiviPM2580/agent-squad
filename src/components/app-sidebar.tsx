@@ -14,13 +14,30 @@ import CreateMenu from "./create-menu";
 import { getChats } from "@/queries/bots";
 import { ChatAvatar } from "./chat-avatar";
 import { formatDistanceToNowStrict } from "date-fns";
+import { SearchCommand, SearchCommandItem } from "./search-command";
+import Link from "next/link";
 
 export const AppSidebar = async () => {
   const chats = await getChats();
   return (
     <Sidebar>
-      <SidebarHeader className="flex-row justify-end">
-        <CreateMenu />
+      <SidebarHeader>
+        <div className="flex-row justify-end">
+          <CreateMenu />
+        </div>
+        <SearchCommand>
+          {chats.map((chat) => (
+            <SearchCommandItem
+              key={chat.id}
+              href={`/chats/${chat.id}`}
+              value={chat.id}
+              keywords={[chat.name ?? chat.bot.name]}
+            >
+              <ChatAvatar seed={chat.bot.avatar} />
+              <span className="truncate">{chat.name ?? chat.bot.name}</span>
+            </SearchCommandItem>
+          ))}
+        </SearchCommand>
       </SidebarHeader>
       <SidebarContent>
         <SidebarGroup>
@@ -28,7 +45,10 @@ export const AppSidebar = async () => {
             <SidebarMenu>
               {chats.map((chat) => (
                 <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton size="lg">
+                  <SidebarMenuButton
+                    size="lg"
+                    render={<Link href={`/chats/${chat.id}`} />}
+                  >
                     <ChatAvatar seed={chat.bot.avatar} />
                     <div className="grid flex-1 text-left leading-tight">
                       <div className="flex items-baseline gap-2">

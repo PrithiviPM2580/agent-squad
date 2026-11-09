@@ -25,6 +25,7 @@
     "@types/pg": "^8.23.1",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.2",
+    "date-fns": "^4.4.0",
     "drizzle-kit": "^0.31.11",
     "drizzle-orm": "^0.45.4",
     "drizzle-zod": "^0.8.3",

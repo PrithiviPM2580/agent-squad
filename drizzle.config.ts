@@ -1,4 +1,5 @@
 import { defineConfig } from "drizzle-kit";
+import { normalizeDatabaseUrl } from "./src/lib/database-url";
 
 process.loadEnvFile(".env");
 
@@ -7,6 +8,6 @@ export default defineConfig({
   dialect: "postgresql",
   casing: "snake_case",
   dbCredentials: {
-    url: process.env.DATABASE_URL!,
+    url: normalizeDatabaseUrl(process.env.DATABASE_URL!),
   },
 });

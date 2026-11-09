@@ -191,12 +191,24 @@ export const BotForm = ({ onCreated }: BotFormProps) => {
   );
 };
 
-export const BotDialog = ({ children }: { children: React.ReactElement }) => {
-  const [open, setOpen] = useState(false);
+interface BotDialogProps {
+  children?: React.ReactElement;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+}
+
+export const BotDialog = ({
+  children,
+  open: controlledOpen,
+  onOpenChange,
+}: BotDialogProps) => {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState<boolean>(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger render={children} />
+      {children && <DialogTrigger render={children} />}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>New Bot</DialogTitle>

@@ -4,7 +4,13 @@ import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
 
 import { db } from "@/db";
-import { type BotInsert, botInsertSchema, bots } from "@/db/schema";
+import {
+  type BotInsert,
+  botInsertSchema,
+  bots,
+  chatMembers,
+  chats,
+} from "@/db/schema";
 
 export async function createBot(values: BotInsert) {
   try {
@@ -16,10 +22,21 @@ export async function createBot(values: BotInsert) {
 
     const data = botInsertSchema.parse(values);
 
-    const [bot] = await db
-      .insert(bots)
-      .values({ ...data, instructions: data.instructions || null, userId })
-      .returning();
+    const bot = await db.transaction(async (tx) => {
+      const [bot] = await tx
+        .insert(bots)
+        .values({ ...data, instructions: data.instructions || null, userId })
+        .returning();
+
+      const [chat] = await tx
+        .insert(chats)
+        .values({ userId, kind: "direct" })
+        .returning({ id: chats.id });
+
+      await tx.insert(chatMembers).values({ chatId: chat.id, botId: bot.id });
+
+      return bot;
+    });
 
     revalidatePath("/");
 

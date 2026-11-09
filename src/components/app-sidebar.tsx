@@ -1,4 +1,10 @@
 import { UserButton } from "@clerk/nextjs";
+import { formatDistanceToNowStrict } from "date-fns";
+import { getChats } from "@/queries/bots";
+import { ChatAvatar } from "./chat-avatar";
+import { ChatMenuButton } from "./chat-menu-button";
+import CreateMenu from "./create-menu";
+import { SearchCommand, SearchCommandItem } from "./search-command";
 import {
   Sidebar,
   SidebarContent,
@@ -10,12 +16,6 @@ import {
   SidebarMenuItem,
   SidebarRail,
 } from "./ui/sidebar";
-import CreateMenu from "./create-menu";
-import { getChats } from "@/queries/bots";
-import { ChatAvatar } from "./chat-avatar";
-import { formatDistanceToNowStrict } from "date-fns";
-import { SearchCommand, SearchCommandItem } from "./search-command";
-import { ChatMenuButton } from "./chat-menu-button";
 
 export const AppSidebar = async () => {
   const chats = await getChats();

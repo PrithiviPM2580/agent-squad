@@ -1,8 +1,8 @@
 import { MonitorIcon } from "lucide-react";
+import type { ChatWithBot } from "@/queries/bots";
 import { BotDialog } from "./bot-dialog";
 import { ChatAvatar } from "./chat-avatar";
 import { Button } from "./ui/button";
-import type { ChatWithBot } from "@/queries/bots";
 
 export const ChatHeader = ({ chat }: { chat: ChatWithBot }) => {
   return (

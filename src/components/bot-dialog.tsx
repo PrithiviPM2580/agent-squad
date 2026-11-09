@@ -3,10 +3,21 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { ShuffleIcon, Trash2Icon } from "lucide-react";
 import { nanoid } from "nanoid";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
-
 import { createBot, deleteBot, updateBot } from "@/actions/bot";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import {
   Dialog,
   DialogClose,
@@ -26,17 +37,6 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
 import { type Bot, type BotInsert, botInsertSchema } from "@/db/schema";
 import { PRESENTS } from "@/lib/constant";
 import { ChatAvatar } from "./chat-avatar";
@@ -44,7 +44,6 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { toast } from "./ui/toast";
-import { useRouter } from "next/navigation";
 
 interface BotFormProps {
   bot?: Bot;

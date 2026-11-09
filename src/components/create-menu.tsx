@@ -1,6 +1,8 @@
 "use client";
 
 import { PlusIcon, UsersIcon } from "lucide-react";
+import { useState } from "react";
+import { BotDialog } from "./bot-dialog";
 import { Button } from "./ui/button";
 import {
   DropdownMenu,
@@ -8,8 +10,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
-import { useState } from "react";
-import { BotDialog } from "./bot-dialog";
 
 export const CreateMenu = () => {
   const [botDialogOpen, setBotDialogOpen] = useState<boolean>(false);

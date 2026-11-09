@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useContext, createContext, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { SearchIcon } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import {
   Command,
@@ -14,7 +14,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Kbd } from "./ui/kbd";
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "./ui/sidebar";
+import { SidebarMenu, SidebarMenuButton, SidebarMenuItem } from "./ui/sidebar";
 
 const SearchCommandContext = createContext<() => void>(() => {});
 

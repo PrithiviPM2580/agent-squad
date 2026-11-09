@@ -1,10 +1,9 @@
 "use client";
 
-import React, { useState, useContext, createContext, useEffect } from "react";
+import { useState, useContext, createContext, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { SearchIcon } from "lucide-react";
 
-import { Button } from "./ui/button";
 import {
   Command,
   CommandDialog,
@@ -15,6 +14,7 @@ import {
   CommandList,
 } from "@/components/ui/command";
 import { Kbd } from "./ui/kbd";
+import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "./ui/sidebar";
 
 const SearchCommandContext = createContext<() => void>(() => {});
 
@@ -41,15 +41,20 @@ export function SearchCommand({ children }: SearchCommandProps) {
   }, []);
   return (
     <SearchCommandContext.Provider value={() => setOpen(false)}>
-      <Button
-        variant="outline"
-        className="w-full min-w-0 justify-start border-input bg-transparent px-2.5 py-1 text-base font-normal text-muted-foreground md:text-sm"
-        onClick={() => setOpen(true)}
-      >
-        <SearchIcon />
-        Search
-        <Kbd className="ml-auto">⌘K</Kbd>
-      </Button>
+      <SidebarMenu>
+        <SidebarMenuItem>
+          <SidebarMenuButton
+            variant="outline"
+            tooltip="Search"
+            onClick={() => setOpen(true)}
+            className="text-muted-foreground group-data-[collapsible=icon]:bg-transparent group-data-[collapsible=icon]:text-sidebar-foreground group-data-[collapsible=icon]:shadow-none group-data-[collapsible=icon]:hover:bg-sidebar-accent"
+          >
+            <SearchIcon />
+            <span>Search</span>
+            <Kbd className="ml-auto">⌘K</Kbd>
+          </SidebarMenuButton>
+        </SidebarMenuItem>
+      </SidebarMenu>
       <CommandDialog
         open={open}
         onOpenChange={setOpen}

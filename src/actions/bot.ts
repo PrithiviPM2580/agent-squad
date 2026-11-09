@@ -11,6 +11,7 @@ import {
   chatMembers,
   chats,
 } from "@/db/schema";
+import { and, eq, inArray } from "drizzle-orm";
 
 export async function createBot(values: BotInsert) {
   try {
@@ -45,4 +46,69 @@ export async function createBot(values: BotInsert) {
     console.error("Error creating bot:", error);
     throw new Error("Failed to create bot");
   }
+}
+
+export async function updateBot(botId: string, values: BotInsert) {
+  const { isAuthenticated, userId } = await auth();
+
+  if (!isAuthenticated) {
+    throw new Error("User is not authenticated");
+  }
+
+  const data = botInsertSchema.parse(values);
+
+  const [bot] = await db
+    .update(bots)
+    .set({ ...data, instructions: data.instructions || null })
+    .where(and(eq(bots.id, botId), eq(bots.userId, userId)))
+    .returning();
+
+  if (!bot) {
+    throw new Error(
+      "Bot not found or user is not authorized to update this bot",
+    );
+  }
+
+  revalidatePath("/", "layout");
+
+  return bot;
+}
+
+export async function deleteBot(botId: string) {
+  const { isAuthenticated, userId } = await auth();
+
+  if (!isAuthenticated) {
+    throw new Error("User is not authenticated");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(chats)
+      .where(
+        and(
+          eq(chats.userId, userId),
+          eq(chats.kind, "direct"),
+          inArray(
+            chats.id,
+            tx
+              .select({ id: chatMembers.chatId })
+              .from(chatMembers)
+              .where(eq(chatMembers.botId, botId)),
+          ),
+        ),
+      );
+
+    const [bot] = await tx
+      .delete(bots)
+      .where(and(eq(bots.id, botId), eq(bots.userId, userId)))
+      .returning({ id: bots.id });
+
+    if (!bot) {
+      throw new Error(
+        "Bot not found or user is not authorized to delete this bot",
+      );
+    }
+  });
+
+  revalidatePath("/", "layout");
 }

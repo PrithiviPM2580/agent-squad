@@ -1,12 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { ShuffleIcon } from "lucide-react";
+import { ShuffleIcon, Trash2Icon } from "lucide-react";
 import { nanoid } from "nanoid";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 
-import { createBot } from "@/actions/bot";
+import { createBot, deleteBot, updateBot } from "@/actions/bot";
 import {
   Dialog,
   DialogClose,
@@ -26,27 +26,40 @@ import {
   FieldLabel,
   FieldTitle,
 } from "@/components/ui/field";
-import { type BotInsert, botInsertSchema } from "@/db/schema";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { type Bot, type BotInsert, botInsertSchema } from "@/db/schema";
 import { PRESENTS } from "@/lib/constant";
 import { ChatAvatar } from "./chat-avatar";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Spinner } from "./ui/spinner";
 import { toast } from "./ui/toast";
+import { useRouter } from "next/navigation";
 
 interface BotFormProps {
-  onCreated: () => void;
+  bot?: Bot;
+  onSaved: () => void;
 }
 
-export const BotForm = ({ onCreated }: BotFormProps) => {
-  const [initialSeed] = useState(() => nanoid());
+export const BotForm = ({ bot, onSaved }: BotFormProps) => {
+  const [initialSeed] = useState(() => bot?.avatar ?? nanoid());
   const form = useForm<BotInsert>({
     resolver: zodResolver(botInsertSchema),
     defaultValues: {
-      name: "",
+      name: bot?.name ?? "",
       avatar: initialSeed,
-      job: "",
-      instructions: "",
+      job: bot?.job ?? "",
+      instructions: bot?.instructions ?? "",
     },
   });
 
@@ -54,13 +67,18 @@ export const BotForm = ({ onCreated }: BotFormProps) => {
 
   const onSubmit = async (values: BotInsert) => {
     try {
-      const bot = await createBot(values);
-      toast.add({ type: "success", title: `${bot.name} is ready` });
-      onCreated();
+      if (bot) {
+        const updated = await updateBot(bot.id, values);
+        toast.add({ type: "success", title: `${updated.name} updated` });
+      } else {
+        const created = await createBot(values);
+        toast.add({ type: "success", title: `${created.name} created` });
+      }
+      onSaved();
     } catch {
       toast.add({
         type: "error",
-        title: "Failed to create bot",
+        title: bot ? "Failed to update bot" : "Failed to create bot",
         description: "Something went wrong while creating the bot.",
       });
     }
@@ -178,27 +196,94 @@ export const BotForm = ({ onCreated }: BotFormProps) => {
         />
       </FieldGroup>
       <DialogFooter>
+        {bot && <BotDeleteDialog bot={bot} onDeleted={onSaved} />}
         <DialogClose render={<Button type="button" variant="outline" />}>
           Cancel
         </DialogClose>
 
         <Button type="submit" disabled={isSubmitting}>
           {isSubmitting && <Spinner />}
-          Create bot
+          {bot ? "Save changes" : "Create bot"}
         </Button>
       </DialogFooter>
     </form>
   );
 };
 
+interface BotDeleteDialogProps {
+  bot: Bot;
+  onDeleted: () => void;
+}
+
+export const BotDeleteDialog = ({ bot, onDeleted }: BotDeleteDialogProps) => {
+  const router = useRouter();
+  const [open, setOpen] = useState<boolean>(false);
+  const [isDeleting, setIsDeleting] = useState<boolean>(false);
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await deleteBot(bot.id);
+      toast.add({ type: "success", title: `${bot.name} has been deleted` });
+      onDeleted();
+      router.push("/");
+    } catch {
+      toast.add({
+        type: "error",
+        title: "Failed to delete bot",
+        description: "Something went wrong while deleting the bot.",
+      });
+      setIsDeleting(false);
+    }
+  };
+
+  return (
+    <AlertDialog
+      open={open}
+      onOpenChange={(open) => !isDeleting && setOpen(open)}
+    >
+      <AlertDialogTrigger
+        render={
+          <Button type="button" variant="destructive" className="sm:mr-auto" />
+        }
+      >
+        <Trash2Icon />
+        Delete
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete {bot.name}?</AlertDialogTitle>
+          <AlertDialogDescription>
+            This deletes the bot and your chat with it. It can&apos;t be undone.{" "}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            type="button"
+            variant="destructive"
+            disabled={isDeleting}
+            onClick={handleDelete}
+          >
+            {isDeleting && <Spinner />}
+            Delete bot
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+};
+
 interface BotDialogProps {
-  children?: React.ReactElement;
+  bot?: Bot;
+  trigger?: React.ReactElement;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
 
 export const BotDialog = ({
-  children,
+  bot,
+  trigger,
   open: controlledOpen,
   onOpenChange,
 }: BotDialogProps) => {
@@ -208,15 +293,18 @@ export const BotDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      {children && <DialogTrigger render={children} />}
+      {trigger && <DialogTrigger render={trigger} />}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>New Bot</DialogTitle>
+          <DialogTitle>{bot ? "Edit Bot" : "Create Bot"}</DialogTitle>
           <DialogDescription>
             Give it a face, a name, and a job to do.
+            {bot
+              ? "Change its face, its name, or the job it does."
+              : "Give it a face, a name, and a job to do."}
           </DialogDescription>
         </DialogHeader>
-        <BotForm onCreated={() => setOpen(false)} />
+        <BotForm bot={bot} onSaved={() => setOpen(false)} />
       </DialogContent>
     </Dialog>
   );

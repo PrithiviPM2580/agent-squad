@@ -27,12 +27,14 @@ export default async function Home() {
         </EmptyDescription>
       </EmptyHeader>
       <EmptyContent>
-        <BotDialog>
-          <Button variant="secondary" size="lg">
-            <PlusIcon />
-            Create a new bot
-          </Button>
-        </BotDialog>
+        <BotDialog
+          trigger={
+            <Button variant="secondary" size="lg">
+              <PlusIcon />
+              Create a new bot
+            </Button>
+          }
+        />
       </EmptyContent>
     </Empty>
   );

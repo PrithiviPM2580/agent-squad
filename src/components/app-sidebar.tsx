@@ -7,20 +7,20 @@ import {
   SidebarGroupContent,
   SidebarHeader,
   SidebarMenu,
-  SidebarMenuButton,
   SidebarMenuItem,
+  SidebarRail,
 } from "./ui/sidebar";
 import CreateMenu from "./create-menu";
 import { getChats } from "@/queries/bots";
 import { ChatAvatar } from "./chat-avatar";
 import { formatDistanceToNowStrict } from "date-fns";
 import { SearchCommand, SearchCommandItem } from "./search-command";
-import Link from "next/link";
+import { ChatMenuButton } from "./chat-menu-button";
 
 export const AppSidebar = async () => {
   const chats = await getChats();
   return (
-    <Sidebar>
+    <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex-row justify-end">
           <CreateMenu />
@@ -39,15 +39,15 @@ export const AppSidebar = async () => {
           ))}
         </SearchCommand>
       </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="group-data-[collapsible=icon]:overflow-auto">
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
               {chats.map((chat) => (
                 <SidebarMenuItem key={chat.id}>
-                  <SidebarMenuButton
-                    size="lg"
-                    render={<Link href={`/chats/${chat.id}`} />}
+                  <ChatMenuButton
+                    chatId={chat.id}
+                    tooltip={chat.name ?? chat.bot.name}
                   >
                     <ChatAvatar seed={chat.bot.avatar} />
                     <div className="grid flex-1 text-left leading-tight">
@@ -68,7 +68,7 @@ export const AppSidebar = async () => {
                         </span>
                       )}
                     </div>
-                  </SidebarMenuButton>
+                  </ChatMenuButton>
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -84,7 +84,7 @@ export const AppSidebar = async () => {
                 elements: {
                   rootBox: "flex! w-full!",
                   userButtonTrigger:
-                    "flex! h-8! w-full! items-center! justify-start! gap-2! overflow-hidden! rounded-md! p-2! text-left! text-sm! text-sidebar-foreground! shadow-none! ring-sidebar-ring! outline-hidden! hover:bg-sidebar-accent! hover:text-sidebar-accent-foreground! focus-visible:ring-2! active:bg-sidebar-accent! active:text-sidebar-accent-foreground! aria-expanded:bg-sidebar-accent! aria-expanded:text-sidebar-accent-foreground!",
+                    "flex! h-8! w-full! items-center! justify-start! gap-2! overflow-hidden! rounded-md! p-2! text-left! text-sm! text-sidebar-foreground! shadow-none! ring-sidebar-ring! outline-hidden! hover:bg-sidebar-accent! hover:text-sidebar-accent-foreground! focus-visible:ring-2! active:bg-sidebar-accent! active:text-sidebar-accent-foreground! aria-expanded:bg-sidebar-accent! aria-expanded:text-sidebar-accent-foreground! group-data-[collapsible=icon]:p-1!",
                   userButtonBox: "min-w-0! flex-1! gap-2!",
                   userButtonAvatarBox: "order-first! size-6! shrink-0!",
                   userButtonOuterIdentifier:
@@ -95,6 +95,7 @@ export const AppSidebar = async () => {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
+      <SidebarRail />
     </Sidebar>
   );
 };

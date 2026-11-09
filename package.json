@@ -12,13 +12,15 @@
     "type-check": "tsc --noEmit",
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
-    "dev:trigger": "trigger dev"
+    "dev:trigger": "trigger dev",
+    "dev:all": "mprocs"
   },
   "dependencies": {
     "@ai-sdk/react": "^4.0.170",
     "@base-ui/react": "^1.9.0",
     "@clerk/nextjs": "^7.9.25",
     "@clerk/ui": "^1.42.4",
+    "@daytona/sdk": "^0.231.1",
     "@dicebear/core": "^10.7.0",
     "@dicebear/styles": "^10.6.0",
     "@hookform/resolvers": "^7.0.3",
@@ -61,7 +63,9 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",
+    "mprocs": "^0.9.6",
     "tailwindcss": "^4",
+    "trigger.dev": "^4.8.3",
     "typescript": "^5"
   },
   "packageManager": "bun@1.4.3",

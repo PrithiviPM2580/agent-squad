@@ -1,0 +1,5 @@
+procs:
+  next:
+    cmd: ["bun", "run", "dev"]
+  trigger-dev:
+    cmd: ["bun", "run", "dev:trigger"]

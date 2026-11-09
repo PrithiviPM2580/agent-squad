@@ -1,8 +1,8 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-
 import { db } from "@/db";
 import {
   type BotInsert,
@@ -11,7 +11,6 @@ import {
   chatMembers,
   chats,
 } from "@/db/schema";
-import { and, eq, inArray } from "drizzle-orm";
 
 export async function createBot(values: BotInsert) {
   try {

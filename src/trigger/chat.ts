@@ -1,6 +1,7 @@
 import { chat } from "@trigger.dev/sdk/ai";
 import { stepCountIs } from "ai";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
+import { z } from "zod";
 import { db } from "@/db";
 import { type Bot, chatMembers } from "@/db/schema";
 import { openrouter } from "@/lib/open-router";
@@ -21,10 +22,19 @@ function buildInstructions(bot: Bot) {
     .join("\n\n");
 }
 
-async function getChatBot(chatId: string) {
+const clientDataSchema = z
+  .object({
+    botId: z.string().optional(),
+  })
+  .optional();
+
+async function getChatBot(chatId: string, botId?: string) {
   const member = await db.query.chatMembers.findFirst({
-    where: eq(chatMembers.chatId, chatId),
-    orderBy: asc(chatMembers.joinedAt),
+    where: and(
+      eq(chatMembers.chatId, chatId),
+      botId ? eq(chatMembers.botId, botId) : undefined,
+    ),
+    orderBy: [asc(chatMembers.joinedAt), asc(chatMembers.botId)],
     with: {
       bot: true,
     },
@@ -35,20 +45,32 @@ async function getChatBot(chatId: string) {
   return member.bot;
 }
 
-export const chatAgent = chat.withUIMessage<ChatUIMessage>().agent({
-  id: "chat",
-  tools: ({ chatId }) =>
-    createSandboxTools(async () => (await getChatBot(chatId)).sandboxId),
-  run: async ({ chatId, messages, tools, signal, streamText }) => {
-    const bot = await getChatBot(chatId);
-
-    return streamText({
-      model: openrouter("nvidia/nemotron-3.5-lightning:free"),
-      instructions: buildInstructions(bot),
+export const chatAgent = chat
+  .withUIMessage<ChatUIMessage>()
+  .withClientData({ schema: clientDataSchema })
+  .agent({
+    id: "chat",
+    tools: ({ chatId, clientData }) =>
+      createSandboxTools(
+        async () => (await getChatBot(chatId, clientData?.botId)).sandboxId,
+      ),
+    run: async ({
+      chatId,
+      clientData,
       messages,
       tools,
-      abortSignal: signal,
-      stopWhen: stepCountIs(50),
-    });
-  },
-});
+      signal,
+      streamText,
+    }) => {
+      const bot = await getChatBot(chatId, clientData?.botId);
+
+      return streamText({
+        model: openrouter("nvidia/nemotron-3.5-super-vl:free"),
+        instructions: buildInstructions(bot),
+        messages,
+        tools,
+        stopWhen: stepCountIs(50),
+        abortSignal: signal,
+      });
+    },
+  });

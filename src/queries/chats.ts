@@ -1,5 +1,5 @@
 import { auth } from "@clerk/nextjs/server";
-import { and, desc, eq } from "drizzle-orm";
+import { and, asc, eq } from "drizzle-orm";
 
 import { db } from "@/db";
 import { chatMembers, chats } from "@/db/schema";
@@ -15,8 +15,7 @@ export async function getChat(chatId: string) {
     where: and(eq(chats.id, chatId), eq(chats.userId, userId)),
     with: {
       members: {
-        orderBy: desc(chatMembers.joinedAt),
-        limit: 1,
+        orderBy: [asc(chatMembers.joinedAt), asc(chatMembers.botId)],
         with: {
           bot: true,
         },
@@ -27,5 +26,7 @@ export async function getChat(chatId: string) {
   if (!row) return null;
 
   const { members, ...chat } = row;
-  return members[0] ? { ...chat, bot: members[0].bot } : null;
+  return members.length > 0
+    ? { ...chat, bots: members.map((member) => member.bot) }
+    : null;
 }

@@ -9,7 +9,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { nanoid } from "nanoid";
-import type { z } from "zod";
+import { z } from "zod";
 
 export const bots = pgTable(
   "bots",
@@ -107,9 +107,29 @@ export const botInsertSchema = createInsertSchema(bots, {
   createdAt: true,
 });
 
+export const groupChatInsertSchema = createInsertSchema(chats, {
+  name: z
+    .string()
+    .trim()
+    .min(1, "Name is required")
+    .max(50, "Name must be less than 50 characters"),
+})
+  .omit({
+    id: true,
+    userId: true,
+    kind: true,
+    lastMessagePreview: true,
+    lastMessageAt: true,
+    createdAt: true,
+  })
+  .extend({
+    botIds: z.array(z.string()).min(2, "At least 2 bots are required"),
+  });
+
 export type Bot = typeof bots.$inferSelect;
 export type NewBot = typeof bots.$inferInsert;
 export type BotInsert = z.infer<typeof botInsertSchema>;
+export type GroupChatInsert = z.infer<typeof groupChatInsertSchema>;
 
 export type Chat = typeof chats.$inferSelect;
 export type NewChat = typeof chats.$inferInsert;

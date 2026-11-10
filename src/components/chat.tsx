@@ -178,11 +178,13 @@ export const ChatMessages = ({
   initialMessages,
   transport,
 }: ChatMessagesProps) => {
-  const { messages, sendMessage, status, stop } = useChat<ChatUIMessage>({
-    id: chatId,
-    messages: initialMessages,
-    transport,
-  });
+  const { messages, sendMessage, status, stop, error } = useChat<ChatUIMessage>(
+    {
+      id: chatId,
+      messages: initialMessages,
+      transport,
+    },
+  );
 
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
@@ -215,6 +217,14 @@ export const ChatMessages = ({
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
+      {error ? (
+        <p
+          className="mx-auto w-full max-w-3xl px-4 pb-2 text-sm text-destructive"
+          role="alert"
+        >
+          Unable to send message: {error.message}
+        </p>
+      ) : null}
       <div className="mx-auto w-full max-w-3xl p-4 pt-0">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputTextarea placeholder="Send a message..." />

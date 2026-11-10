@@ -3,7 +3,6 @@ import { stepCountIs } from "ai";
 import { asc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { type Bot, chatMembers } from "@/db/schema";
-import { MODELS } from "@/lib/constant";
 import { openrouter } from "@/lib/open-router";
 import { type ChatUIMessage, createSandboxTools } from "@/lib/sandbox-tools";
 
@@ -22,16 +21,16 @@ function buildInstructions(bot: Bot) {
     .join("\n\n");
 }
 
-async function getChatBot(botId: string) {
+async function getChatBot(chatId: string) {
   const member = await db.query.chatMembers.findFirst({
-    where: eq(chatMembers.botId, botId),
+    where: eq(chatMembers.chatId, chatId),
     orderBy: asc(chatMembers.joinedAt),
     with: {
       bot: true,
     },
   });
 
-  if (!member) throw new Error(`No bot found for botId: ${botId}`);
+  if (!member) throw new Error(`No bot found for chatId: ${chatId}`);
 
   return member.bot;
 }
@@ -44,7 +43,7 @@ export const chatAgent = chat.withUIMessage<ChatUIMessage>().agent({
     const bot = await getChatBot(chatId);
 
     return streamText({
-      model: openrouter.chat(MODELS[4]),
+      model: openrouter("nvidia/nemotron-3.5-lightning:free"),
       instructions: buildInstructions(bot),
       messages,
       tools,

@@ -2,6 +2,7 @@
 
 import { auth } from "@clerk/nextjs/server";
 import { and, eq, inArray } from "drizzle-orm";
+import { nanoid } from "nanoid";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import {
@@ -11,21 +12,30 @@ import {
   chatMembers,
   chats,
 } from "@/db/schema";
+import { createBotSandbox, deleteBotSandbox } from "@/lib/daytona";
 
 export async function createBot(values: BotInsert) {
+  const { isAuthenticated, userId } = await auth();
+
+  if (!isAuthenticated) {
+    throw new Error("User is not authenticated");
+  }
+
+  const data = botInsertSchema.parse(values);
+  const botId = nanoid();
+  const sandboxId = await createBotSandbox(botId);
+
   try {
-    const { isAuthenticated, userId } = await auth();
-
-    if (!isAuthenticated) {
-      throw new Error("User is not authenticated");
-    }
-
-    const data = botInsertSchema.parse(values);
-
     const bot = await db.transaction(async (tx) => {
       const [bot] = await tx
         .insert(bots)
-        .values({ ...data, instructions: data.instructions || null, userId })
+        .values({
+          ...data,
+          id: botId,
+          instructions: data.instructions || null,
+          sandboxId,
+          userId,
+        })
         .returning();
 
       const [chat] = await tx
@@ -42,8 +52,8 @@ export async function createBot(values: BotInsert) {
 
     return bot;
   } catch (error) {
-    console.error("Error creating bot:", error);
-    throw new Error("Failed to create bot");
+    await deleteBotSandbox(sandboxId).catch(() => {});
+    throw error;
   }
 }
 
@@ -79,6 +89,18 @@ export async function deleteBot(botId: string) {
   if (!isAuthenticated) {
     throw new Error("User is not authenticated");
   }
+
+  const [owned] = await db
+    .select({ sandboxId: bots.sandboxId })
+    .from(bots)
+    .where(and(eq(bots.id, botId), eq(bots.userId, userId)));
+
+  if (!owned)
+    throw new Error(
+      "Bot not found or user is not authorized to delete this bot",
+    );
+
+  await deleteBotSandbox(owned.sandboxId);
 
   await db.transaction(async (tx) => {
     await tx

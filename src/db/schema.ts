@@ -24,7 +24,7 @@ export const bots = pgTable(
       .$defaultFn(() => nanoid()),
     job: text().notNull(),
     instructions: text(),
-    sandboxId: text(),
+    sandboxId: text().notNull(),
     createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index("bots_user_id_idx").on(table.userId)],

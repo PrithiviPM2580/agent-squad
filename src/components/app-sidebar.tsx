@@ -1,9 +1,10 @@
 import { UserButton } from "@clerk/nextjs";
 import { formatDistanceToNowStrict } from "date-fns";
-import { getChats } from "@/queries/bots";
+import { type ChatWithBots, getBots, getChats } from "@/queries/bots";
 import { ChatAvatar } from "./chat-avatar";
 import { ChatMenuButton } from "./chat-menu-button";
 import CreateMenu from "./create-menu";
+import { GroupChatAvatar } from "./group-chat-avatar";
 import { SearchCommand, SearchCommandItem } from "./search-command";
 import {
   Sidebar,
@@ -17,13 +18,23 @@ import {
   SidebarRail,
 } from "./ui/sidebar";
 
+const SidebarChatAvatar = ({ chat }: { chat: ChatWithBots }) => {
+  return chat.kind === "group" ? (
+    <GroupChatAvatar seeds={chat.bots.map((bot) => bot.avatar)} />
+  ) : (
+    <ChatAvatar seed={chat.bots[0].avatar} />
+  );
+};
+
 export const AppSidebar = async () => {
-  const chats = await getChats();
+  const [chats, bots] = await Promise.all([getChats(), getBots()]);
   return (
     <Sidebar collapsible="icon">
       <SidebarHeader>
         <div className="flex-row justify-end">
-          <CreateMenu />
+          <CreateMenu
+            bots={bots.map(({ id, name, avatar }) => ({ id, name, avatar }))}
+          />
         </div>
         <SearchCommand>
           {chats.map((chat) => (
@@ -31,10 +42,10 @@ export const AppSidebar = async () => {
               key={chat.id}
               href={`/chats/${chat.id}`}
               value={chat.id}
-              keywords={[chat.name ?? chat.bot.name]}
+              keywords={[chat.name ?? chat.bots[0].name]}
             >
-              <ChatAvatar seed={chat.bot.avatar} />
-              <span className="truncate">{chat.name ?? chat.bot.name}</span>
+              <SidebarChatAvatar chat={chat} />
+              <span className="truncate">{chat.name ?? chat.bots[0].name}</span>
             </SearchCommandItem>
           ))}
         </SearchCommand>
@@ -47,13 +58,13 @@ export const AppSidebar = async () => {
                 <SidebarMenuItem key={chat.id}>
                   <ChatMenuButton
                     chatId={chat.id}
-                    tooltip={chat.name ?? chat.bot.name}
+                    tooltip={chat.name ?? chat.bots[0].name}
                   >
-                    <ChatAvatar seed={chat.bot.avatar} />
+                    <SidebarChatAvatar chat={chat} />
                     <div className="grid flex-1 text-left leading-tight">
                       <div className="flex items-baseline gap-2">
                         <span className="truncate font-medium">
-                          {chat.name ?? chat.bot.name}
+                          {chat.name ?? chat.bots[0].name}
                         </span>
                         <time
                           dateTime={chat.lastMessageAt.toISOString()}

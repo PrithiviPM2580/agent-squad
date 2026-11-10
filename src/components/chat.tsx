@@ -7,6 +7,7 @@ import {
   useTriggerChatTransport,
 } from "@trigger.dev/sdk/chat/react";
 import { isToolUIPart } from "ai";
+import { useState } from "react";
 import {
   loadTranscript,
   mintChatAccessToken,
@@ -20,6 +21,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import type { Bot } from "@/db/schema";
 import type { ChatUIMessage } from "@/lib/sandbox-tools";
 import type { chatAgent } from "@/trigger/chat";
 import {
@@ -37,9 +39,18 @@ import {
   PromptInput,
   PromptInputFooter,
   type PromptInputMessage,
+  PromptInputSelect,
+  PromptInputSelectContent,
+  PromptInputSelectItem,
+  PromptInputSelectTrigger,
+  PromptInputSelectValue,
   PromptInputSubmit,
   PromptInputTextarea,
+  PromptInputTools,
 } from "./ai-elements/prompt-input";
+import { ChatAvatar } from "./chat-avatar";
+
+type ChatBot = Pick<Bot, "id" | "name" | "avatar">;
 
 type ToolPart = Extract<
   ChatUIMessage["parts"][number],
@@ -141,9 +152,10 @@ const ToolCallDetails = ({ part }: { part: ToolPart }) => {
 
 interface ChatProps {
   chatId: string;
+  bots?: ChatBot[];
 }
 
-export const Chat = ({ chatId }: ChatProps) => {
+export const Chat = ({ chatId, bots }: ChatProps) => {
   const transport = useTriggerChatTransport<typeof chatAgent>({
     task: "chat",
     accessToken: ({ chatId }) => mintChatAccessToken(chatId),
@@ -161,6 +173,7 @@ export const Chat = ({ chatId }: ChatProps) => {
     <ChatMessages
       key={chatId}
       chatId={chatId}
+      bots={bots}
       initialMessages={messages}
       transport={transport}
     />
@@ -169,12 +182,14 @@ export const Chat = ({ chatId }: ChatProps) => {
 
 interface ChatMessagesProps {
   chatId: string;
+  bots?: ChatBot[];
   initialMessages: ChatUIMessage[];
   transport: TriggerChatTransport;
 }
 
 export const ChatMessages = ({
   chatId,
+  bots = [],
   initialMessages,
   transport,
 }: ChatMessagesProps) => {
@@ -186,9 +201,15 @@ export const ChatMessages = ({
     },
   );
 
+  const [botId, setBotId] = useState<string>(bots[0]?.id ?? "");
+  const selectedBot = bots.find((bot) => bot.id === botId);
+
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
-    sendMessage(message);
+    sendMessage(
+      { text: message.text },
+      selectedBot ? { metadata: { botId: selectedBot.id } } : undefined,
+    );
   };
 
   return (
@@ -228,7 +249,35 @@ export const ChatMessages = ({
       <div className="mx-auto w-full max-w-3xl p-4 pt-0">
         <PromptInput onSubmit={handleSubmit}>
           <PromptInputTextarea placeholder="Send a message..." />
-          <PromptInputFooter className="justify-end">
+          <PromptInputFooter
+            className={selectedBot ? undefined : "justify-end"}
+          >
+            {selectedBot && (
+              <PromptInputTools>
+                <PromptInputSelect
+                  value={selectedBot.id}
+                  onValueChange={(value) => setBotId(value as string)}
+                >
+                  <PromptInputSelectTrigger aria-label="Bot to talk to">
+                    <PromptInputSelectValue>
+                      <ChatAvatar
+                        seed={selectedBot.avatar}
+                        className="size-5"
+                      />
+                      {selectedBot.name}
+                    </PromptInputSelectValue>
+                  </PromptInputSelectTrigger>
+                  <PromptInputSelectContent>
+                    {bots.map((bot) => (
+                      <PromptInputSelectItem key={bot.id} value={bot.id}>
+                        <ChatAvatar seed={bot.avatar} className="size-5" />
+                        {bot.name}
+                      </PromptInputSelectItem>
+                    ))}
+                  </PromptInputSelectContent>
+                </PromptInputSelect>
+              </PromptInputTools>
+            )}
             <PromptInputSubmit status={status} onStop={stop} />
           </PromptInputFooter>
         </PromptInput>

@@ -19,6 +19,18 @@ export default async function Page({ params }: PageProps) {
 
   if (!chat) notFound();
 
+  if (chat.kind === "group") {
+    return (
+      <div className="flex h-svh flex-col">
+        <ChatHeader chat={chat} />
+        <Chat
+          chatId={chat.id}
+          bots={chat.bots.map(({ id, name, avatar }) => ({ id, name, avatar }))}
+        />
+      </div>
+    );
+  }
+
   return (
     <DesktopPanelProvider key={chat.id} chatId={chat.id}>
       <div className="h-svh">
@@ -26,10 +38,17 @@ export default async function Page({ params }: PageProps) {
           <ResizablePanel id="chat" minSize="30%">
             <div className="flex h-full flex-col">
               <ChatHeader chat={chat} />
-              <Chat chatId={chat.id} />
+              <Chat
+                chatId={chat.id}
+                bots={chat.bots.map(({ id, name, avatar }) => ({
+                  id,
+                  name,
+                  avatar,
+                }))}
+              />
             </div>
           </ResizablePanel>
-          <DesktopPanel name={chat.bot.name} />
+          <DesktopPanel name={chat.bots[0].name} />
         </ResizablePanelGroup>
       </div>
     </DesktopPanelProvider>

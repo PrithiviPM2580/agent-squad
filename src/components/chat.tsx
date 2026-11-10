@@ -70,6 +70,7 @@ const toolTitles: Record<ToolPart["type"], string> = {
   "tool-keyboardPress": "Press key",
   "tool-viewScreen": "Look at screen",
   "tool-showScreen": "Show screen",
+  "tool-handoff": "Handoff",
 };
 
 const ToolCall = ({ part }: { part: ToolPart }) => {
@@ -81,6 +82,12 @@ const ToolCall = ({ part }: { part: ToolPart }) => {
         className="border"
         mediaType={part.output.mediaType}
       />
+    );
+  }
+
+  if (part.type === "tool-handoff" && part.state === "output-available") {
+    return (
+      <p className="text-muted-foreground">Handed off to {part.output.name}</p>
     );
   }
 
@@ -96,6 +103,29 @@ const ToolCall = ({ part }: { part: ToolPart }) => {
       </ToolContent>
     </Tool>
   );
+};
+const splitByAuthor = (message: ChatUIMessage, bots: ChatBot[]) => {
+  const findBot = (botId?: string) => bots.find((bot) => bot.id === botId);
+
+  let section = {
+    author:
+      message.role === "assistant"
+        ? findBot(message.metadata?.botId)
+        : undefined,
+    parts: [] as ChatUIMessage["parts"],
+  };
+  const sections = [section];
+
+  for (const part of message.parts) {
+    section.parts.push(part);
+
+    if (part.type === "tool-handoff" && part.state === "output-available") {
+      section = { author: findBot(part.output.botId), parts: [] };
+      sections.push(section);
+    }
+  }
+
+  return sections;
 };
 
 const ToolCallDetails = ({ part }: { part: ToolPart }) => {
@@ -216,25 +246,34 @@ export const ChatMessages = ({
     <div data-slot="chat" className="flex min-h-0 flex-1 flex-col">
       <Conversation>
         <ConversationContent className="mx-auto w-full max-w-3xl">
-          {messages.map((message) => (
-            <Message key={message.id} from={message.role}>
-              <MessageContent>
-                {message.parts.map((part, i) => {
-                  if (part.type === "text") {
-                    return (
-                      <MessageResponse key={`${message.id}-${i}`}>
-                        {part.text}
-                      </MessageResponse>
-                    );
-                  }
-                  if (part.type !== "dynamic-tool" && isToolUIPart(part)) {
-                    return <ToolCall key={part.toolCallId} part={part} />;
-                  }
-                  return null;
-                })}
-              </MessageContent>
-            </Message>
-          ))}
+          {messages.flatMap((message) =>
+            splitByAuthor(message, bots).map(({ author, parts }, i) => (
+              <Message
+                from={message.role}
+                key={`${message.id}-${i}`}
+                className={author && "flex-row items-start"}
+              >
+                {author && (
+                  <ChatAvatar seed={author.avatar} className="size-6" />
+                )}
+                <MessageContent>
+                  {parts.map((part, j) => {
+                    if (part.type === "text") {
+                      return (
+                        <MessageResponse key={`${message.id}-${i}-${j}`}>
+                          {part.text}
+                        </MessageResponse>
+                      );
+                    }
+                    if (part.type !== "dynamic-tool" && isToolUIPart(part)) {
+                      return <ToolCall key={part.toolCallId} part={part} />;
+                    }
+                    return null;
+                  })}
+                </MessageContent>
+              </Message>
+            )),
+          )}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>

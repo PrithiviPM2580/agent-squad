@@ -1,9 +1,8 @@
 import type { Sandbox } from "@daytona/sdk";
-import type { InferChatUIMessageFromTools } from "@trigger.dev/sdk/ai";
-import { tool } from "ai";
-import path from "path";
-import { file, z } from "zod";
+import { type InferUITools, tool, type UIDataTypes, type UIMessage } from "ai";
+import { z } from "zod";
 import { getBotSandbox } from "./daytona";
+import type { HandoffTools } from "./handoff-tool";
 
 const MAX_TEXT_LENGTH = 20000;
 
@@ -61,32 +60,43 @@ function screentshotToModelOutput({ output }: { output: Screenshot }) {
   };
 }
 
-export function createSandboxTools(getSandboxId: () => Promise<string>) {
-  let sandbox: Promise<Sandbox> | undefined;
-  let desktop: Promise<Sandbox> | undefined;
+export function createSandboxTools(
+  getSandboxId: () => string | Promise<string>,
+) {
+  const sandboxs = new Map<string, Promise<Sandbox>>();
+  const desktops = new Map<string, Promise<Sandbox>>();
 
-  function getSandbox() {
-    sandbox ??= getSandboxId()
-      .then(getBotSandbox)
-      .catch((err) => {
-        sandbox = undefined;
+  async function getSandbox() {
+    const id = await getSandboxId();
+
+    let sandbox = sandboxs.get(id);
+    if (!sandbox) {
+      sandbox = getBotSandbox(id).catch((err) => {
+        sandboxs.delete(id);
         throw err;
       });
-
+      sandboxs.set(id, sandbox);
+    }
     return sandbox;
   }
 
-  function getDesktop() {
-    desktop ??= getSandbox()
-      .then(async (sandbox) => {
-        const { status } = await sandbox.computerUse.getStatus();
-        if (status !== "active") await sandbox.computerUse.start();
-        return sandbox;
-      })
-      .catch((err) => {
-        desktop = undefined;
-        throw err;
-      });
+  async function getDesktop() {
+    const id = await getSandboxId();
+
+    let desktop = desktops.get(id);
+    if (!desktop) {
+      desktop = getSandbox()
+        .then(async (sandbox) => {
+          const { status } = await sandbox.computerUse.getStatus();
+          if (status !== "active") await sandbox.computerUse.start();
+          return sandbox;
+        })
+        .catch((err) => {
+          desktops.delete(id);
+          throw err;
+        });
+      desktops.set(id, desktop);
+    }
     return desktop;
   }
 
@@ -311,4 +321,9 @@ export function createSandboxTools(getSandboxId: () => Promise<string>) {
 }
 
 export type SandboxTools = ReturnType<typeof createSandboxTools>;
-export type ChatUIMessage = InferChatUIMessageFromTools<SandboxTools>;
+export type ChatMessageMetadata = { botId?: string };
+export type ChatUIMessage = UIMessage<
+  ChatMessageMetadata,
+  UIDataTypes,
+  InferUITools<SandboxTools & HandoffTools>
+>;

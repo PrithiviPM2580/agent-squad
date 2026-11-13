@@ -4,9 +4,11 @@ import { MonitorIcon } from "lucide-react";
 import type { ChatWithBots } from "@/queries/bots";
 import { BotDialog } from "./bot-dialog";
 import { ChatAvatar } from "./chat-avatar";
+import { GroupChatDialog } from "./group-chat-dialog";
 import { useDesktopPanelContext } from "./desktop-panel";
 import { GroupChatAvatar } from "./group-chat-avatar";
 import { Button } from "./ui/button";
+import type { Bot } from "@/db/schema";
 
 const DesktopButton = () => {
   const desktopPanel = useDesktopPanelContext();
@@ -25,19 +27,32 @@ const DesktopButton = () => {
   );
 };
 
-export const ChatHeader = ({ chat }: { chat: ChatWithBots }) => {
+interface ChatHeaderProps {
+  chat: ChatWithBots;
+  bots?: Pick<Bot, "id" | "name" | "avatar">[];
+}
+
+export const ChatHeader = ({ chat, bots = [] }: ChatHeaderProps) => {
   return (
     <header
       data-slot="chat-header"
       className="flex h-12 shrink-0 items-center gap-2 border-b px-4"
     >
       {chat.kind === "group" ? (
-        <h1 className="flex min-w-0 items-center gap-2 text-sm font-medium">
-          <GroupChatAvatar
-            seeds={chat.bots.map((bot) => bot.avatar)}
-            className="size-6"
-          />
-          <span className="truncate">{chat.name}</span>
+        <h1 className="-ml-2 flex min-w-0">
+          <GroupChatDialog
+            chat={chat}
+            bots={bots}
+            trigger={
+              <Button variant="ghost" className="min-w-0 shrink gap-2 px-2" />
+            }
+          >
+            <GroupChatAvatar
+              seeds={chat.bots.map((bot) => bot.avatar)}
+              className="size-6"
+            />
+            <span className="truncate">{chat.name}</span>
+          </GroupChatDialog>
         </h1>
       ) : (
         <>

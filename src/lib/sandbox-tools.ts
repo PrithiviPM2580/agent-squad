@@ -1,7 +1,7 @@
 import type { Sandbox } from "@daytona/sdk";
 import { type InferUITools, tool, type UIDataTypes, type UIMessage } from "ai";
 import { z } from "zod";
-import { getBotSandbox } from "./daytona";
+import { getBotSandbox, MEMORY_FILE, readBotMemory } from "./daytona";
 import type { HandoffTools } from "./handoff-tool";
 
 const MAX_TEXT_LENGTH = 20000;
@@ -186,6 +186,43 @@ export function createSandboxTools(
             isDir: f.isDir,
             size: f.size,
           })),
+        };
+      },
+    }),
+    recall: tool({
+      description:
+        "Read your memory: the notes you have saved across all your conversations with the person, including ones you cannot see from here. Call this before answering any question about the person, their preferences, their projects or anything said or decided earlier, and always before saying you do not know something or asking them to tell you again.",
+      inputSchema: z.object({}),
+      execute: async () => {
+        const sandbox = await getSandbox();
+        return {
+          memory: truncate(await readBotMemory(sandbox)),
+        };
+      },
+    }),
+    remember: tool({
+      description:
+        "Save a note to your memory, so that you know it in every conversation with the person, not only this one. Call this whenever they ask you to remember something, and whenever you learn something worth knowing later: facts about them and their work, their preferences, decisions, standing instructions. Saying you will remember something does nothing unless you call this.",
+      inputSchema: z.object({
+        note: z
+          .string()
+          .describe(
+            "What to remember, as one self-contained sentence that makes sense without this conversation",
+          ),
+      }),
+      execute: async ({ note }) => {
+        const sandbox = await getSandbox();
+
+        const line = Buffer.from(`- ${note.trim()}\n`, "utf8");
+        const response = await sandbox.process.executeCommand(
+          `echo ${line.toString("base64")} | base64 -d >> ${MEMORY_FILE}`,
+        );
+
+        if (response.exitCode !== 0) {
+          throw new Error(`Failed to write memory file: ${response.result}`);
+        }
+        return {
+          remembered: note.trim(),
         };
       },
     }),

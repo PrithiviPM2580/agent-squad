@@ -6,6 +6,7 @@ import { ChatHeader } from "@/components/chat-header";
 import { DesktopPanel, DesktopPanelProvider } from "@/components/desktop-panel";
 import { ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
 import { getChat } from "@/queries/chats";
+import { getBots } from "@/queries/bots";
 
 interface PageProps {
   params: Promise<{ chatId: string }>;
@@ -20,9 +21,13 @@ export default async function Page({ params }: PageProps) {
   if (!chat) notFound();
 
   if (chat.kind === "group") {
+    const bots = await getBots();
     return (
       <div className="flex h-svh flex-col">
-        <ChatHeader chat={chat} />
+        <ChatHeader
+          chat={chat}
+          bots={bots.map(({ id, name, avatar }) => ({ id, name, avatar }))}
+        />
         <Chat
           chatId={chat.id}
           bots={chat.bots.map(({ id, name, avatar }) => ({ id, name, avatar }))}

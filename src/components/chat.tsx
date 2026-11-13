@@ -14,6 +14,7 @@ import {
   startChatSession,
 } from "@/actions/chat";
 import { CodeBlock } from "@/components/ai-elements/code-block";
+import { Badge } from "./ui/badge";
 import {
   Tool,
   ToolContent,
@@ -62,6 +63,8 @@ const toolTitles: Record<ToolPart["type"], string> = {
   "tool-readFile": "Read file",
   "tool-writeFile": "Write file",
   "tool-listFiles": "List files",
+  "tool-recall": "Recall",
+  "tool-remember": "Remember",
   "tool-mouseClick": "Click",
   "tool-mouseMove": "Move mouse",
   "tool-mouseDrag": "Drag",
@@ -232,48 +235,79 @@ export const ChatMessages = ({
   );
 
   const [botId, setBotId] = useState<string>(bots[0]?.id ?? "");
-  const selectedBot = bots.find((bot) => bot.id === botId);
+  const selectedBot = bots.find((bot) => bot.id === botId) ?? bots[0];
 
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
-    sendMessage(
-      { text: message.text },
-      selectedBot ? { metadata: { botId: selectedBot.id } } : undefined,
-    );
+    const metadata = selectedBot && { botId: selectedBot.id };
+
+    sendMessage({ text: message.text, metadata }, { metadata });
   };
 
   return (
     <div data-slot="chat" className="flex min-h-0 flex-1 flex-col">
       <Conversation>
         <ConversationContent className="mx-auto w-full max-w-3xl">
-          {messages.flatMap((message) =>
-            splitByAuthor(message, bots).map(({ author, parts }, i) => (
-              <Message
-                from={message.role}
-                key={`${message.id}-${i}`}
-                className={author && "flex-row items-start"}
-              >
-                {author && (
-                  <ChatAvatar seed={author.avatar} className="size-6" />
-                )}
-                <MessageContent>
-                  {parts.map((part, j) => {
-                    if (part.type === "text") {
-                      return (
-                        <MessageResponse key={`${message.id}-${i}-${j}`}>
-                          {part.text}
-                        </MessageResponse>
-                      );
-                    }
-                    if (part.type !== "dynamic-tool" && isToolUIPart(part)) {
-                      return <ToolCall key={part.toolCallId} part={part} />;
-                    }
-                    return null;
-                  })}
-                </MessageContent>
-              </Message>
-            )),
-          )}
+          {messages.flatMap((message) => {
+            const addressee =
+              message.role === "user"
+                ? bots.find((bot) => bot.id === message.metadata?.botId)
+                : undefined;
+
+            return splitByAuthor(message, bots).map(({ author, parts }, i) => {
+              const renderedParts = parts.map((part, j) => {
+                if (part.type === "text") {
+                  return (
+                    <MessageResponse
+                      key={`${message.id}-${i}-${j}`}
+                      className={
+                        addressee && j === 0
+                          ? "inline [&>p:first-child]:inline"
+                          : undefined
+                      }
+                    >
+                      {part.text}
+                    </MessageResponse>
+                  );
+                }
+                if (part.type !== "dynamic-tool" && isToolUIPart(part)) {
+                  return <ToolCall key={part.toolCallId} part={part} />;
+                }
+                return null;
+              });
+
+              return (
+                <Message
+                  from={message.role}
+                  key={`${message.id}-${i}`}
+                  className={author && "flex-row items-start"}
+                >
+                  {author && (
+                    <ChatAvatar seed={author.avatar} className="size-6" />
+                  )}
+                  <MessageContent>
+                    {addressee ? (
+                      <div>
+                        <Badge
+                          variant="outline"
+                          className="mr-1.5 max-w-40 pl-1 align-top"
+                        >
+                          <ChatAvatar
+                            seed={addressee.avatar}
+                            className="size-3.5"
+                          />
+                          <span className="truncate">{addressee.name}</span>
+                        </Badge>
+                        {renderedParts}
+                      </div>
+                    ) : (
+                      renderedParts
+                    )}
+                  </MessageContent>
+                </Message>
+              );
+            });
+          })}
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>

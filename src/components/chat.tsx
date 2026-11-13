@@ -50,6 +50,7 @@ import {
   PromptInputTools,
 } from "./ai-elements/prompt-input";
 import { ChatAvatar } from "./chat-avatar";
+import { usePaywall } from "@/hooks/use-paywall";
 
 type ChatBot = Pick<Bot, "id" | "name" | "avatar">;
 
@@ -236,9 +237,12 @@ export const ChatMessages = ({
 
   const [botId, setBotId] = useState<string>(bots[0]?.id ?? "");
   const selectedBot = bots.find((bot) => bot.id === botId) ?? bots[0];
+  const checkPaywall = usePaywall();
 
   const handleSubmit = (message: PromptInputMessage) => {
     if (!message.text.trim()) return;
+
+    if (!checkPaywall("bots")) throw new Error("Upgrade required");
     const metadata = selectedBot && { botId: selectedBot.id };
 
     sendMessage({ text: message.text, metadata }, { metadata });

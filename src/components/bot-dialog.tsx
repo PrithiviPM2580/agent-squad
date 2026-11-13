@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import { createBot, deleteBot, updateBot } from "@/actions/bot";
+import { usePaywall } from "@/hooks/use-paywall";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -253,7 +254,8 @@ export const BotDeleteDialog = ({ bot, onDeleted }: BotDeleteDialogProps) => {
         <AlertDialogHeader>
           <AlertDialogTitle>Delete {bot.name}?</AlertDialogTitle>
           <AlertDialogDescription>
-            This deletes the bot and your chat with it. It can&apos;t be undone.{" "}
+            This deletes the bot and your chat with it. It can&apos;t be
+            undone.{" "}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -288,8 +290,12 @@ export const BotDialog = ({
 }: BotDialogProps) => {
   const [uncontrolledOpen, setUncontrolledOpen] = useState<boolean>(false);
   const open = controlledOpen ?? uncontrolledOpen;
-  const setOpen = onOpenChange ?? setUncontrolledOpen;
+  const checkPaywall = usePaywall();
 
+  const setOpen = (open: boolean) => {
+    if (open && !bot && !checkPaywall("bots")) return;
+    (onOpenChange ?? setUncontrolledOpen)(open);
+  };
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {trigger && <DialogTrigger render={trigger} />}

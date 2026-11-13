@@ -15,10 +15,14 @@ import {
 import { createBotSandbox, deleteBotSandbox } from "@/lib/daytona";
 
 export async function createBot(values: BotInsert) {
-  const { isAuthenticated, userId } = await auth();
+  const { isAuthenticated, userId, has } = await auth();
 
   if (!isAuthenticated) {
     throw new Error("User is not authenticated");
+  }
+
+  if (!has({ feature: "bots" }) || !has({ feature: "sanboxes" })) {
+    throw new Error("Upgrade required");
   }
 
   const data = botInsertSchema.parse(values);

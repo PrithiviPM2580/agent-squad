@@ -25,6 +25,7 @@ import {
 } from "./ui/dialog";
 import { ResizableHandle, ResizablePanel } from "./ui/resizable";
 import { Spinner } from "./ui/spinner";
+import { usePaywall } from "@/hooks/use-paywall";
 
 type DesktopStatus = "idle" | "connecting" | "connected" | "disconnected";
 
@@ -60,6 +61,7 @@ export const DesktopPanelProvider = ({
 }) => {
   const [open, setOpen] = useState<boolean>(false);
   const [status, setStatus] = useState<DesktopStatus>("idle");
+  const checkPaywall = usePaywall();
 
   const screenRef = useRef<HTMLDivElement>(null);
   const rfbRef = useRef<RFB | null>(null);
@@ -110,9 +112,10 @@ export const DesktopPanelProvider = ({
   }, [chatId, getScreen]);
 
   const toggle = useCallback(() => {
+    if (!open && !checkPaywall("sandboxes")) return;
     if (!open && status === "idle") connect();
     setOpen(!open);
-  }, [open, status, connect]);
+  }, [open, status, connect, checkPaywall]);
 
   const attachScreen = useCallback(
     (slot: HTMLElement) => {

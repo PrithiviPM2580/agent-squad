@@ -21,6 +21,7 @@ import { getBotDesktopUrl } from "@/lib/daytona";
 import type { ChatUIMessage } from "@/lib/sandbox-tools";
 import { getChat } from "@/queries/chats";
 import type { chatAgent } from "@/trigger/chat";
+import type { Feature } from "@/types";
 
 const startSession = chat.createStartSessionAction<typeof chatAgent>("chat");
 const loadStoredTranscript = chat.createLoadTranscriptAction(defaultStorage);
@@ -31,15 +32,22 @@ async function assertChatOwner(chatId: string) {
   if (!chat) throw new Error("Chat not found");
 }
 
+async function assertFeature(feature: Feature) {
+  const { has } = await clerkAuth();
+  if (!has({ feature })) throw new Error("Upgrade required");
+}
+
 export async function startChatSession(
   params: ChatStartSessionParams<typeof chatAgent>,
 ) {
+  await assertFeature("bots");
   await assertChatOwner(params.chatId);
 
   return startSession(params);
 }
 
 export async function mintChatAccessToken(chatId: string) {
+  await assertFeature("bots");
   await assertChatOwner(chatId);
 
   return auth.createPublicToken({
@@ -60,6 +68,7 @@ export async function loadTranscript(params: { chatId: string }) {
 }
 
 export async function getDesktopUrl(chatId: string) {
+  await assertFeature("sandboxes");
   const chat = await getChat(chatId);
 
   if (!chat || chat.kind !== "direct") throw new Error("Chat not found");
